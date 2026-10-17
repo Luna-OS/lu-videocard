@@ -5,8 +5,8 @@
 Lu Videocard – your HDMI capture card in a window, with clean sound and a sharp picture. Made for
 the BENFEI 4K HDMI → USB-C/A capture card (1080p · 60 fps), and it works with any UVC capture
 card (Elgato Cam Link, UGREEN, MS2130/MS2109 sticks, …). Part of the Luna-OS "Moon" family: the
-same night-sky palette and glass surfaces as Moon Zip, Moon Code and Moon Explorer – with an
-axolotl as its icon.
+same night-sky palette and glass surfaces as Moon Zip, Moon Code and Moon Explorer – with Axo,
+the Luna-OS axolotl mascot, as its icon.
 
 ![Lu Videocard waiting for the capture card](docs/screenshots/start.png)
 

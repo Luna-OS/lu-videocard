@@ -1,7 +1,7 @@
 {
   "name": "lu-videocard",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Lu Videocard – your HDMI capture card with clean sound and picture, under the night sky.",
   "license": "MIT",
   "type": "module",
