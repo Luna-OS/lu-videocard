@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a2160"/>
+      <stop offset="0.55" stop-color="#141030"/>
+      <stop offset="1" stop-color="#0b0920"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.62" r="0.55">
+      <stop offset="0" stop-color="#b9aefb" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#b9aefb" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="skin" cx="0.42" cy="0.32" r="0.8">
+      <stop offset="0" stop-color="#ffe4f0"/>
+      <stop offset="0.6" stop-color="#ffbcd8"/>
+      <stop offset="1" stop-color="#ef93bd"/>
+    </radialGradient>
+    <linearGradient id="gill" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#c7b8ff"/>
+      <stop offset="1" stop-color="#ff7fb3"/>
+    </linearGradient>
+    <linearGradient id="gillR" x1="1" y1="0" x2="0" y2="0">
+      <stop offset="0" stop-color="#c7b8ff"/>
+      <stop offset="1" stop-color="#ff7fb3"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="58" fill="url(#sky)"/>
+  <rect width="256" height="256" rx="58" fill="url(#glow)"/>
+
+  <!-- stars and crescent moon -->
+  <circle cx="44" cy="46" r="2.6" fill="#f4f1ff" opacity="0.9"/>
+  <circle cx="86" cy="28" r="1.8" fill="#d6cffd" opacity="0.8"/>
+  <circle cx="150" cy="34" r="2" fill="#f4f1ff" opacity="0.7"/>
+  <circle cx="226" cy="118" r="2" fill="#9ad7f5" opacity="0.7"/>
+  <circle cx="30" cy="214" r="1.8" fill="#d6cffd" opacity="0.6"/>
+  <path d="M214 30 a26 26 0 1 0 14 44 a20 20 0 1 1 -14 -44 z" fill="#f4f1ff" opacity="0.92"/>
+
+  <!-- gills -->
+  <g>
+    <ellipse cx="64" cy="98" rx="30" ry="12" transform="rotate(-48 64 98)" fill="url(#gill)"/>
+    <path d="M47.5 98 H80.5" transform="rotate(-48 64 98)" stroke="#e86aa4" stroke-opacity="0.55" stroke-width="2.5" stroke-linecap="round"/>
+    <ellipse cx="50" cy="126" rx="30" ry="12" transform="rotate(-22 50 126)" fill="url(#gill)"/>
+    <path d="M33.5 126 H66.5" transform="rotate(-22 50 126)" stroke="#e86aa4" stroke-opacity="0.55" stroke-width="2.5" stroke-linecap="round"/>
+    <ellipse cx="50" cy="156" rx="28" ry="11" transform="rotate(4 50 156)" fill="url(#gill)"/>
+    <path d="M34.6 156 H65.4" transform="rotate(4 50 156)" stroke="#e86aa4" stroke-opacity="0.55" stroke-width="2.5" stroke-linecap="round"/>
+    <ellipse cx="192" cy="98" rx="30" ry="12" transform="rotate(48 192 98)" fill="url(#gillR)"/>
+    <path d="M175.5 98 H208.5" transform="rotate(48 192 98)" stroke="#e86aa4" stroke-opacity="0.55" stroke-width="2.5" stroke-linecap="round"/>
+    <ellipse cx="206" cy="126" rx="30" ry="12" transform="rotate(22 206 126)" fill="url(#gillR)"/>
+    <path d="M189.5 126 H222.5" transform="rotate(22 206 126)" stroke="#e86aa4" stroke-opacity="0.55" stroke-width="2.5" stroke-linecap="round"/>
+    <ellipse cx="206" cy="156" rx="28" ry="11" transform="rotate(-4 206 156)" fill="url(#gillR)"/>
+    <path d="M190.6 156 H221.4" transform="rotate(-4 206 156)" stroke="#e86aa4" stroke-opacity="0.55" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+
+  <!-- head -->
+  <ellipse cx="128" cy="152" rx="76" ry="58" fill="url(#skin)"/>
+  <ellipse cx="128" cy="152" rx="76" ry="58" fill="none" stroke="#e57fae" stroke-opacity="0.5" stroke-width="2"/>
+
+  <!-- blush -->
+  <ellipse cx="84" cy="170" rx="11" ry="7" fill="#ff6fa8" opacity="0.45"/>
+  <ellipse cx="172" cy="170" rx="11" ry="7" fill="#ff6fa8" opacity="0.45"/>
+
+  <!-- eyes -->
+  <circle cx="98" cy="146" r="11" fill="#1d1742"/>
+  <circle cx="158" cy="146" r="11" fill="#1d1742"/>
+  <circle cx="102" cy="141" r="4" fill="#ffffff"/>
+  <circle cx="162" cy="141" r="4" fill="#ffffff"/>
+  <circle cx="95" cy="150" r="1.8" fill="#b9aefb"/>
+  <circle cx="155" cy="150" r="1.8" fill="#b9aefb"/>
+
+  <!-- smile -->
+  <path d="M108 172 Q128 188 148 172" fill="none" stroke="#8a3b63" stroke-width="4.5" stroke-linecap="round"/>
+</svg>
