@@ -141,6 +141,51 @@ export const PinIcon = ({ size }: P) => (
   </Icon>
 );
 
+export const FolderIcon = ({ size }: P) => (
+  <Icon size={size}>
+    <path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5V17a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 17z" />
+  </Icon>
+);
+
+/** A four-pointed sparkle: the enhancement pipeline. */
+export const SparkleIcon = ({ size }: P) => (
+  <Icon size={size}>
+    <path d="M12 3.5c.6 4.2 2.3 5.9 6.5 6.5-4.2.6-5.9 2.3-6.5 6.5-.6-4.2-2.3-5.9-6.5-6.5 4.2-.6 5.9-2.3 6.5-6.5z" />
+    <path d="M5.5 15.5c.3 1.6.9 2.2 2.5 2.5-1.6.3-2.2.9-2.5 2.5-.3-1.6-.9-2.2-2.5-2.5 1.6-.3 2.2-.9 2.5-2.5z" />
+  </Icon>
+);
+
+/** Frame generation: two frames with one between them. */
+export const FramesIcon = ({ size }: P) => (
+  <Icon size={size}>
+    <rect x="3" y="7" width="6" height="10" rx="1.2" />
+    <rect x="15" y="7" width="6" height="10" rx="1.2" />
+    <path d="M12 9v6M10.5 12h3" strokeDasharray="1.5 1.5" />
+  </Icon>
+);
+
+export const RecordIcon = ({ size }: P) => (
+  <Icon size={size}>
+    <circle cx="12" cy="12" r="8.5" />
+    <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none" />
+  </Icon>
+);
+
+export const StopIcon = ({ size }: P) => (
+  <Icon size={size}>
+    <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none" />
+  </Icon>
+);
+
+/** The replay buffer: a clock running back. */
+export const ReplayIcon = ({ size }: P) => (
+  <Icon size={size}>
+    <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3" />
+    <path d="M4.5 4.5v4h4" />
+    <path d="M12 8.5V12l2.5 1.5" />
+  </Icon>
+);
+
 /** The three window buttons, drawn thin like Windows 11's own. */
 export const WinMinimizeIcon = () => (
   <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">

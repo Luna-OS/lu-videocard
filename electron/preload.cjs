@@ -22,6 +22,14 @@ contextBridge.exposeInMainWorld("luVideocard", {
 
   saveScreenshot: (bytes) => ipcRenderer.invoke("screenshot:save", bytes),
   showScreenshot: (file) => ipcRenderer.invoke("screenshot:show", file),
+  recordingStart: (ext, kind) => ipcRenderer.invoke("rec:start", ext, kind),
+  recordingWrite: (id, chunk) => ipcRenderer.invoke("rec:write", id, chunk),
+  recordingFinish: (id) => ipcRenderer.invoke("rec:finish", id),
+  recordingCancel: (id) => ipcRenderer.invoke("rec:cancel", id),
+  showRecording: (file) => ipcRenderer.invoke("rec:show", file),
+  openRecordings: () => ipcRenderer.invoke("rec:openFolder"),
+  pickLut: () => ipcRenderer.invoke("lut:pick"),
+  readLut: (file) => ipcRenderer.invoke("lut:read", file),
   openRepo: (page) => ipcRenderer.invoke("shell:openRepo", page),
 
   updateState: () => ipcRenderer.invoke("update:state"),

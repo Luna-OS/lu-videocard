@@ -12,12 +12,15 @@ const {
   session,
   powerSaveBlocker,
   Menu,
+  dialog,
 } = require("electron");
+const fs = require("fs");
 const path = require("path");
 const { createUpdater } = require("./updater.cjs");
 const windowState = require("./window-state.cjs");
 const { saveScreenshot } = require("./screenshots.cjs");
 const { makeIsOwnUrl } = require("./own-url.cjs");
+const { Recordings } = require("./recording.cjs");
 
 const ROOT = path.join(__dirname, "..");
 const INDEX = path.join(ROOT, "dist", "index.html");
@@ -35,6 +38,11 @@ if (process.platform === "win32") app.setAppUserModelId("os.luna.lu-videocard");
 /** @type {BrowserWindow | null} */
 let win = null;
 let keepAwakeId = null;
+/** The recordings folder and the files open in it (made once the app is ready). */
+let recordings = null;
+const recordingsFolder = () => path.join(app.getPath("videos"), "Lu Videocard");
+/** A .cube LUT bigger than this is refused (129³ rows are about 12 MB). */
+const MAX_LUT_BYTES = 40 * 1024 * 1024;
 
 // A capture card can only be opened by one program at a time, so a second start just brings the
 // running window to the front.
@@ -215,6 +223,45 @@ handle("screenshot:show", (file) => {
   }
 });
 
+handle("rec:start", (ext, kind) => {
+  if (!recordings) recordings = new Recordings(recordingsFolder());
+  return recordings.start(String(ext), kind === "replay" ? "replay" : "recording");
+});
+handle("rec:write", (id, chunk) => {
+  if (!recordings) throw new Error("Not recording.");
+  if (!(chunk instanceof Uint8Array)) throw new Error("A chunk must be bytes.");
+  return recordings.write(Number(id), chunk);
+});
+handle("rec:finish", (id) => {
+  if (!recordings) throw new Error("Not recording.");
+  return recordings.finish(Number(id));
+});
+handle("rec:cancel", (id) => recordings?.cancel(Number(id)));
+handle("rec:show", (file) => {
+  if (!recordings) recordings = new Recordings(recordingsFolder());
+  if (recordings.owns(file)) shell.showItemInFolder(file);
+});
+handle("rec:openFolder", async () => {
+  await fs.promises.mkdir(recordingsFolder(), { recursive: true });
+  await shell.openPath(recordingsFolder());
+});
+
+handle("lut:pick", async () => {
+  if (!win) return null;
+  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+    title: "Pick a LUT",
+    filters: [{ name: "Cube LUT", extensions: ["cube", "CUBE"] }],
+    properties: ["openFile"],
+  });
+  return canceled || filePaths.length === 0 ? null : filePaths[0];
+});
+handle("lut:read", async (file) => {
+  if (typeof file !== "string" || !/\.cube$/i.test(file)) throw new Error("Not a .cube file.");
+  const stat = await fs.promises.stat(file);
+  if (stat.size > MAX_LUT_BYTES) throw new Error("The LUT file is too big.");
+  return fs.promises.readFile(file, "utf8");
+});
+
 handle("shell:openRepo", (page) => {
   const pages = { home: "", releases: "/releases" };
   if (Object.hasOwn(pages, page)) void shell.openExternal(REPO_URL + pages[page]);
@@ -248,6 +295,10 @@ app.whenReady().then(() => {
 app.on("window-all-closed", () => {
   setKeepAwake(false);
   app.quit();
+});
+app.on("before-quit", () => {
+  // Files of recordings still open are closed so they stay playable.
+  void recordings?.closeAll();
 });
 
 app.on("activate", () => {

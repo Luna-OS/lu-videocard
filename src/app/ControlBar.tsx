@@ -6,9 +6,14 @@ import {
   ExitFullscreenIcon,
   FillIcon,
   FitIcon,
+  FramesIcon,
   FullscreenIcon,
   MutedIcon,
+  RecordIcon,
+  ReplayIcon,
   SettingsIcon,
+  SparkleIcon,
+  StopIcon,
   StreamIcon,
   StretchIcon,
   VolumeIcon,
@@ -31,10 +36,19 @@ export function ControlBar({
   fullscreen,
   streamMode,
   info,
+  enhanceOn,
+  fgOn,
+  recording,
+  recordBusy,
+  replaySeconds,
   onVolume,
   onMute,
   onFit,
   onScreenshot,
+  onEnhance,
+  onFg,
+  onRecord,
+  onReplay,
   onStreamMode,
   onFullscreen,
   onSettings,
@@ -51,10 +65,20 @@ export function ControlBar({
   fullscreen: boolean;
   streamMode: boolean;
   info: string;
+  enhanceOn: boolean;
+  fgOn: boolean;
+  recording: boolean;
+  recordBusy: boolean;
+  /** Seconds in the replay buffer; 0 when it is off. */
+  replaySeconds: number;
   onVolume: (v: number) => void;
   onMute: () => void;
   onFit: () => void;
   onScreenshot: () => void;
+  onEnhance: () => void;
+  onFg: () => void;
+  onRecord: () => void;
+  onReplay: () => void;
   onStreamMode: () => void;
   onFullscreen: () => void;
   onSettings: () => void;
@@ -127,11 +151,59 @@ export function ControlBar({
           type="button"
           className="lv-icon-btn"
           onClick={onScreenshot}
-          aria-label="Screenshot (Ctrl+S)"
-          title="Screenshot (Ctrl+S)"
+          aria-label="Screenshot (F7)"
+          title="Screenshot (F7)"
         >
           <CameraIcon />
         </button>
+        <button
+          type="button"
+          className={`lv-icon-btn ${recording ? "lv-rec-on" : ""}`}
+          onClick={onRecord}
+          disabled={recordBusy}
+          aria-pressed={recording}
+          aria-label={recording ? "Stop recording (F8)" : "Record (F8)"}
+          title={recording ? "Stop recording (F8)" : "Record (F8)"}
+        >
+          {recording ? <StopIcon /> : <RecordIcon />}
+        </button>
+        {replaySeconds > 0 && (
+          <button
+            type="button"
+            className="lv-icon-btn"
+            onClick={onReplay}
+            disabled={recordBusy}
+            aria-label={`Save the last ${replaySeconds} s (F9)`}
+            title={`Save the last ${replaySeconds} s (F9)`}
+          >
+            <ReplayIcon />
+          </button>
+        )}
+
+        <span className="mx-1 h-5 w-px bg-[var(--lv-border)]" aria-hidden="true" />
+
+        <button
+          type="button"
+          className="lv-icon-btn"
+          onClick={onEnhance}
+          aria-pressed={enhanceOn}
+          aria-label={enhanceOn ? "Enhancement on (E)" : "Enhancement off (E)"}
+          title={enhanceOn ? "Enhancement on (E)" : "Enhancement off (E)"}
+        >
+          <SparkleIcon />
+        </button>
+        <button
+          type="button"
+          className="lv-icon-btn"
+          onClick={onFg}
+          aria-pressed={fgOn}
+          aria-label={fgOn ? "Frame generation on (G)" : "Frame generation off (G)"}
+          title={fgOn ? "Frame generation on (G)" : "Frame generation off (G)"}
+        >
+          <FramesIcon />
+        </button>
+
+        <span className="mx-1 h-5 w-px bg-[var(--lv-border)]" aria-hidden="true" />
         {!fullscreen && (
           <button
             type="button"

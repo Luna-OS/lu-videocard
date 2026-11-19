@@ -6,6 +6,7 @@ import { AUDIO_AUTO, AUDIO_OFF, QUALITIES, deviceLabel } from "../lib/devices";
 import { FIT_LABELS, type Fit, type Settings } from "../lib/settings";
 import type { ThemeChoice } from "../theme/useTheme";
 import { CloseIcon, DownloadIcon, RefreshIcon } from "./icons";
+import { EnhanceSection, FgSection, RecordingSection, Toggle } from "./EnhanceSettings";
 import { formatAudio, formatVideo } from "./format";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -38,36 +39,6 @@ function Field({
   );
 }
 
-function Toggle({
-  label,
-  hint,
-  checked,
-  onChange,
-}: {
-  label: string;
-  hint?: string;
-  checked: boolean;
-  onChange: (on: boolean) => void;
-}) {
-  const id = useId();
-  return (
-    <div className="flex items-start justify-between gap-4">
-      <label htmlFor={id} className="cursor-pointer">
-        <span className="block text-[0.8125rem] font-medium">{label}</span>
-        {hint && <span className="block text-xs text-[var(--lv-text-muted)]">{hint}</span>}
-      </label>
-      <input
-        id={id}
-        type="checkbox"
-        role="switch"
-        className="lv-switch mt-0.5"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-      />
-    </div>
-  );
-}
-
 function updateLine(s: UpdateStatus | null): string {
   if (!s) return "";
   switch (s.state) {
@@ -94,10 +65,14 @@ const SHORTCUTS: [string, string][] = [
   ["F / F11 / double-click", "Fullscreen"],
   ["Esc", "Leave fullscreen or stream mode"],
   ["C", "Stream mode (only the picture)"],
+  ["E", "Enhancement on / off"],
+  ["G", "Frame generation on / off"],
+  ["F8", "Start / stop recording"],
+  ["F9", "Save the replay buffer"],
+  ["F7 / Ctrl+S", "Screenshot"],
   ["M", "Mute"],
   ["↑ / ↓", "Volume"],
-  ["Ctrl+S", "Screenshot"],
-  ["I", "Picture and sound info"],
+  ["I", "Picture and performance info"],
   ["R", "Restart the capture card"],
   ["Ctrl+,", "Settings"],
 ];
@@ -107,6 +82,8 @@ export function SettingsPanel({
   update,
   capture,
   outputFailed,
+  lut,
+  gpuError,
   updates,
   version,
   onRestart,
@@ -116,6 +93,8 @@ export function SettingsPanel({
   update: (patch: Partial<Settings>) => void;
   capture: CaptureState;
   outputFailed: boolean;
+  lut: { name: string; error: string };
+  gpuError: string | null;
   updates: {
     status: UpdateStatus | null;
     check: () => void;
@@ -213,14 +192,39 @@ export function SettingsPanel({
             })}
           </div>
           <Toggle
-            label="Show picture and sound info"
-            hint="Resolution, frame rate and sound format in a corner (I)."
+            label="Show picture and performance info"
+            hint="Resolution, frame rates, 1 % low, GPU time and sound format in a corner (I)."
             checked={settings.showStats}
             onChange={(showStats) => update({ showStats })}
           />
           <button type="button" className="lv-btn lv-btn-ghost self-start" onClick={onRestart}>
             <RefreshIcon size={16} /> Restart the capture card
           </button>
+        </Section>
+
+        <Section title="Enhance">
+          {gpuError ? (
+            <p className="m-0 text-[0.8125rem] text-[var(--lv-danger)]">
+              The GPU pipeline isn't available here ({gpuError}); the picture is shown as it comes.
+            </p>
+          ) : (
+            <EnhanceSection
+              enhance={settings.enhance}
+              lut={lut}
+              onChange={(enhance) => update({ enhance })}
+            />
+          )}
+        </Section>
+
+        <Section title="Frame generation">
+          <FgSection fg={settings.fg} onChange={(fg) => update({ fg })} />
+        </Section>
+
+        <Section title="Recording">
+          <RecordingSection
+            recording={settings.recording}
+            onChange={(recording) => update({ recording })}
+          />
         </Section>
 
         <Section title="Sound">

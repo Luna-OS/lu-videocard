@@ -1,4 +1,15 @@
 import { DEFAULT_QUALITY, QUALITIES, AUDIO_AUTO } from "./devices";
+import {
+  DEFAULT_ENHANCE,
+  DEFAULT_FG,
+  DEFAULT_RECORDING,
+  parseEnhance,
+  parseFg,
+  parseRecording,
+  type EnhanceSettings,
+  type FgSettings,
+  type RecordingSettings,
+} from "./enhance";
 import type { ThemeChoice } from "../theme/useTheme";
 
 /** How the picture fills the window: whole picture (bars if needed), cropped, or stretched. */
@@ -37,6 +48,9 @@ export interface Settings {
   alwaysOnTop: boolean;
   /** Resolution, frame rate and sound format in a corner of the picture. */
   showStats: boolean;
+  enhance: EnhanceSettings;
+  fg: FgSettings;
+  recording: RecordingSettings;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -52,6 +66,9 @@ export const DEFAULT_SETTINGS: Settings = {
   keepAwake: true,
   alwaysOnTop: false,
   showStats: false,
+  enhance: DEFAULT_ENHANCE,
+  fg: DEFAULT_FG,
+  recording: DEFAULT_RECORDING,
 };
 
 export const STORAGE_KEY = "lu-videocard.settings.v1";
@@ -79,6 +96,9 @@ export function parseSettings(raw: unknown): Settings {
   for (const key of ["muted", "autoUpdate", "keepAwake", "alwaysOnTop", "showStats"] as const) {
     if (bool(r[key])) out[key] = r[key];
   }
+  out.enhance = parseEnhance(r.enhance);
+  out.fg = parseFg(r.fg);
+  out.recording = parseRecording(r.recording);
   return out;
 }
 

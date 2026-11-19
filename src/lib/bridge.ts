@@ -38,6 +38,17 @@ export interface LuVideocardBridge {
   keepAwake(on: boolean): Promise<void>;
   saveScreenshot(bytes: Uint8Array): Promise<string>;
   showScreenshot(file: string): Promise<void>;
+  /** Recordings: a file in Videos › Lu Videocard that chunks are appended to. */
+  recordingStart(ext: string, kind: "recording" | "replay"): Promise<{ id: number; file: string }>;
+  recordingWrite(id: number, chunk: Uint8Array): Promise<number>;
+  recordingFinish(id: number): Promise<{ file: string; bytes: number }>;
+  recordingCancel(id: number): Promise<void>;
+  showRecording(file: string): Promise<void>;
+  openRecordings(): Promise<void>;
+  /** A file dialog for a .cube LUT; resolves to its path or null. */
+  pickLut(): Promise<string | null>;
+  /** The text of a .cube file (at most a few MB). */
+  readLut(path: string): Promise<string>;
   openRepo(page: "home" | "releases"): Promise<void>;
   updateState(): Promise<UpdateStatus>;
   updateCheck(): Promise<UpdateStatus>;
