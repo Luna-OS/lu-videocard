@@ -16,6 +16,8 @@ export class AudioEngine {
   private volume = 0.8;
   private muted = false;
   private sinkId = "";
+  /** The untouched input for recordings (before volume and mute). */
+  private recordOut: MediaStreamAudioDestinationNode | null = null;
 
   /** True when the browser can play on a chosen speaker. */
   static get canPickOutput(): boolean {
@@ -48,6 +50,7 @@ export class AudioEngine {
     this.source = ctx.createMediaStreamSource(stream);
     this.source.connect(this.gain);
     if (this.analyser) this.source.connect(this.analyser);
+    if (this.recordOut) this.source.connect(this.recordOut);
     if (ctx.state === "suspended") void ctx.resume();
   }
 
@@ -105,6 +108,20 @@ export class AudioEngine {
     return Math.min(1, Math.max(0, (db + 60) / 60));
   }
 
+  /**
+   * A stream of the sound as it comes from the card (volume and mute don't affect it), for
+   * recordings; null when there is no audio context.
+   */
+  recordingStream(): MediaStream | null {
+    const ctx = this.ensureContext();
+    if (!ctx) return null;
+    if (!this.recordOut) {
+      this.recordOut = ctx.createMediaStreamDestination();
+      if (this.source) this.source.connect(this.recordOut);
+    }
+    return this.recordOut.stream;
+  }
+
   /** The browser wants a click before sound may start in some cases; this resumes it. */
   resume(): void {
     if (this.ctx?.state === "suspended") void this.ctx.resume();
@@ -116,5 +133,6 @@ export class AudioEngine {
     this.ctx = null;
     this.gain = null;
     this.analyser = null;
+    this.recordOut = null;
   }
 }

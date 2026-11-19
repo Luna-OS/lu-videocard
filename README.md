@@ -2,11 +2,13 @@
 
 <img src="public/lu-videocard-logo.svg" alt="" width="96" align="right" />
 
-Lu Videocard – your HDMI capture card in a window, with clean sound and a sharp picture. Made for
-the BENFEI 4K HDMI → USB-C/A capture card (1080p · 60 fps), and it works with any UVC capture
-card (Elgato Cam Link, UGREEN, MS2130/MS2109 sticks, …). Part of the Luna-OS "Moon" family: the
-same night-sky palette and glass surfaces as Moon Zip, Moon Code and Moon Explorer – with Axo,
-the Luna-OS axolotl mascot, as its icon.
+Lu Videocard – your HDMI capture card in a window, with clean sound and a sharp picture, and a
+GPU pipeline that makes the picture better: upscaling, sharpening, denoising, an HDR look,
+LUTs and frame generation, plus recording and a replay buffer. Made for the BENFEI 4K HDMI →
+USB-C/A capture card (1080p · 60 fps), and it works with any UVC capture card (Elgato Cam Link,
+UGREEN, MS2130/MS2109 sticks, …). Part of the Luna-OS "Moon" family: the same night-sky palette
+and glass surfaces as Moon Zip, Moon Code and Moon Explorer – with Axo, the Luna-OS axolotl
+mascot, as its icon.
 
 ![Lu Videocard waiting for the capture card](docs/screenshots/start.png)
 
@@ -34,6 +36,52 @@ the Luna-OS axolotl mascot, as its icon.
   day theme.
 - **Updates itself** from the GitHub releases (Settings › Updates).
 
+## Enhancement (E)
+
+Every frame runs through a GPU pipeline (WebGL2, so it works on NVIDIA, AMD and Intel alike):
+
+| Step | What it does |
+| --- | --- |
+| **FSR upscaling** | AMD FidelityFX Super Resolution 1.0 (EASU): edge-adaptive upscaling to the window's size, up to 4× – a 1080p card looks sharp on a 1440p or 4K screen. |
+| **Sharpening** | FSR's RCAS, contrast-adaptive so noise isn't sharpened. |
+| **Denoise** | A bilateral filter for grain, and a temporal filter that steadies still areas across frames. |
+| **Anti-aliasing** | FXAA against jagged edges. |
+| **HDR look** | Local contrast, deeper shadows and brighter lights. |
+| **Colour** | Brightness, contrast, saturation, vibrance, gamma, temperature and tint. |
+| **LUT** | Any .cube LUT (the format of DaVinci Resolve and most LUT packs), with a strength slider. |
+
+Presets – Clean, Sharp, Cinema, Retro, Max – set the whole look at once; every slider can be
+changed afterwards. **E** switches the pipeline off and on for a before/after look. The
+stats (**I**) show what runs and how long the GPU takes per frame.
+
+![The enhance settings](docs/screenshots/enhance.png)
+
+## Frame generation (G)
+
+A generated frame between every two real ones doubles the frame rate: 60 fps from the card
+becomes 120 on screen. The motion is estimated by symmetric block matching (coarse to fine, in
+three quality levels) and each pixel of the new frame is pulled from both neighbours along it;
+where the two don't agree, protection blends them instead, so wrong vectors don't become
+artefacts.
+
+- It costs about half a capture frame of delay – the same as DLSS and FSR frame generation.
+- It needs a screen that refreshes at least twice as fast as frames arrive (120 Hz for 60 fps);
+  on a slower screen it pauses by itself and says so in the stats.
+- **Drop repeated frames**: a 30 fps game on a 60 fps capture card arrives as pairs of equal
+  frames. Dropping the repeats lets frame generation make real in-between frames, so the game
+  runs at a smooth 60.
+
+## Recording (F8) and replay buffer (F9)
+
+**F8** records the picture as shown – enhanced, and with the generated frames when frame
+generation is on – together with the capture card's sound, as MP4 (H.264) where Windows can
+encode it, otherwise WebM, at the bitrate you pick. Files go to Videos › Lu Videocard.
+
+The **replay buffer** keeps the last 15 seconds to 2 minutes in memory while the picture runs;
+**F9** saves them to a file – for the moment that just happened.
+
+![Enhanced picture with a LUT](docs/screenshots/enhanced.png)
+
 ![The settings](docs/screenshots/settings.png)
 
 ## Sharing on Discord
@@ -50,10 +98,14 @@ the Luna-OS axolotl mascot, as its icon.
 | F / F11 / double-click | Fullscreen |
 | Esc | Leave fullscreen or stream mode |
 | C | Stream mode (only the picture) |
+| E | Enhancement on / off |
+| G | Frame generation on / off |
+| F8 | Start / stop recording |
+| F9 | Save the replay buffer |
+| F7 / Ctrl+S | Screenshot (the enhanced picture, at its output resolution) |
 | M | Mute |
 | ↑ / ↓ | Volume |
-| Ctrl+S | Screenshot |
-| I | Picture and sound info (resolution, frame rate, sound format) |
+| I | Picture and performance info (resolution, fps, 1 % low, GPU time, sound format) |
 | R | Restart the capture card |
 | Ctrl+, | Settings |
 
@@ -82,8 +134,11 @@ npm run icons      # render public/lu-videocard-logo.svg into build/icon.png and
 ```
 
 React + Vite + Tailwind CSS in Electron. `src/lib/devices.ts` finds the card and holds the
-capture constraints, `src/lib/capture.ts` starts and restarts the streams, `electron/main.cjs` is
-the frameless window, fullscreen, screenshots and the updater.
+capture constraints, `src/lib/capture.ts` starts and restarts the streams, `src/lib/gl/` is the
+GPU pipeline (shaders and the engine), `src/lib/pacer.ts` decides what each screen refresh
+shows, `src/lib/recording.ts` records, and `electron/main.cjs` is the frameless window,
+fullscreen, screenshots, recording files and the updater. The algorithms the shaders follow are
+listed in [docs/THIRD_PARTY.md](docs/THIRD_PARTY.md).
 
 ## License
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ControlBar } from "./app/ControlBar";
 import { formatVideo } from "./app/format";
 import { useCapture, useIdle, useSettings, useUpdates, useWindowStatus } from "./app/hooks";
@@ -8,6 +8,8 @@ import { StatsOverlay } from "./app/StatsOverlay";
 import { StatusScreen } from "./app/StatusScreen";
 import { TitleBar } from "./app/TitleBar";
 import { Toasts } from "./app/Toasts";
+import { useRecording } from "./app/useRecording";
+import { useRenderer } from "./app/useRenderer";
 import { useToasts } from "./app/useToasts";
 import { getBridge } from "./lib/bridge";
 import { nextFit } from "./lib/settings";
@@ -16,19 +18,6 @@ import { useDocumentTheme } from "./theme/useTheme";
 
 /** How long the mouse must rest before the controls and the cursor disappear. */
 const IDLE_MS = 2500;
-
-/** Grabs the current frame of the picture as PNG bytes, at the card's full resolution. */
-async function grabFrame(video: HTMLVideoElement): Promise<Uint8Array | null> {
-  if (!video.videoWidth || !video.videoHeight) return null;
-  const canvas = document.createElement("canvas");
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
-  ctx.drawImage(video, 0, 0);
-  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
-  return blob ? new Uint8Array(await blob.arrayBuffer()) : null;
-}
 
 const isTyping = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
@@ -47,11 +36,48 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [hoverControls, setHoverControls] = useState(false);
   const [version, setVersion] = useState("");
-  const videoRef = useRef<HTMLVideoElement>(null);
 
   const { state } = capture;
   const live = state.status === "live" && state.stream !== null;
   const hasAudio = state.audio !== null;
+  const renderer = useRenderer({
+    stream: state.stream,
+    live,
+    settings,
+    audio: capture.engine,
+  });
+  const { canvasRef, videoRef, gpuError } = renderer;
+  const notify = useCallback(
+    (text: string, tone: "info" | "error", file?: string) => {
+      toast({
+        text,
+        tone,
+        action:
+          file && bridge
+            ? { label: "Show", run: () => void bridge.showRecording(file) }
+            : undefined,
+      });
+    },
+    [toast, bridge],
+  );
+  const recording = useRecording({
+    live,
+    settings: settings.recording,
+    getStream: renderer.recordingStream,
+    notify,
+  });
+  const [recordSeconds, setRecordSeconds] = useState(0);
+  useEffect(() => {
+    if (!recording.startedAt) return;
+    const t = setInterval(
+      () => setRecordSeconds(Math.floor((Date.now() - recording.startedAt) / 1000)),
+      500,
+    );
+    return () => {
+      clearInterval(t);
+      setRecordSeconds(0);
+    };
+  }, [recording.startedAt]);
   const idle = useIdle(IDLE_MS, live && !settingsOpen && !hoverControls);
   const immersive = win.fullscreen || streamMode;
 
@@ -80,19 +106,10 @@ export default function App() {
     void bridge?.setAlwaysOnTop(settings.alwaysOnTop);
   }, [bridge, settings.alwaysOnTop]);
 
-  // The picture goes into the <video> element (muted: the sound plays through Web Audio).
-  useEffect(() => {
-    const el = videoRef.current;
-    if (!el) return;
-    if (el.srcObject !== state.stream) el.srcObject = state.stream;
-    if (state.stream) void el.play().catch(() => undefined);
-  }, [state.stream]);
-
   const toggleFullscreen = useCallback(() => win.setFullscreen(!win.fullscreen), [win]);
 
   const screenshot = useCallback(async () => {
-    const el = videoRef.current;
-    const png = el && live ? await grabFrame(el) : null;
+    const png = live ? await renderer.screenshot() : null;
     if (!png) {
       toast({ text: "There is no picture to take a screenshot of.", tone: "error" });
       return;
@@ -115,7 +132,7 @@ export default function App() {
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
-  }, [bridge, live, toast]);
+  }, [bridge, live, toast, renderer]);
 
   const setVolume = useCallback(
     (v: number) =>
@@ -137,9 +154,19 @@ export default function App() {
         setSettingsOpen((o) => !o);
         return;
       }
-      if (e.ctrlKey && e.key.toLowerCase() === "s") {
+      if ((e.ctrlKey && e.key.toLowerCase() === "s") || e.key === "F7") {
         e.preventDefault();
         void screenshot();
+        return;
+      }
+      if (e.key === "F8") {
+        e.preventDefault();
+        recording.toggle();
+        return;
+      }
+      if (e.key === "F9") {
+        e.preventDefault();
+        void recording.saveReplay();
         return;
       }
       if (e.key === "F11") {
@@ -157,6 +184,12 @@ export default function App() {
           break;
         case "m":
           update({ muted: !settings.muted });
+          break;
+        case "e":
+          update({ enhance: { ...settings.enhance, enabled: !settings.enhance.enabled } });
+          break;
+        case "g":
+          update({ fg: { ...settings.fg, enabled: !settings.fg.enabled } });
           break;
         case "i":
           update({ showStats: !settings.showStats });
@@ -186,6 +219,7 @@ export default function App() {
     settings,
     setVolume,
     capture,
+    recording,
   ]);
 
   const u = updates.status;
@@ -221,10 +255,32 @@ export default function App() {
     <span className="lv-chip lv-chip-warning">No picture</span>
   );
 
+  const recordChip = recording.recording ? (
+    <span className="lv-chip lv-chip-rec" aria-live="polite">
+      <span className="lv-rec-dot" aria-hidden="true" />
+      REC {Math.floor(recordSeconds / 60)}:{String(recordSeconds % 60).padStart(2, "0")}
+    </span>
+  ) : null;
+  const fgChip =
+    live && settings.fg.enabled && !gpuError ? (
+      <span
+        className={`lv-chip ${renderer.stats.fgLimited ? "lv-chip-muted" : ""}`}
+        title={
+          renderer.stats.fgLimited
+            ? "Frame generation is paused: the screen can't show twice the capture rate"
+            : "Frame generation"
+        }
+      >
+        FG ×2
+      </span>
+    ) : null;
+
   const titleContent = (
     <>
       {statusChip}
       {live && !hasAudio && <span className="lv-chip lv-chip-muted">No sound</span>}
+      {fgChip}
+      {recordChip}
       {updatePill}
     </>
   );
@@ -238,23 +294,39 @@ export default function App() {
         data-live={live}
         data-idle={idle}
         onDoubleClick={(e) => {
-          if (live && (e.target === e.currentTarget || e.target === videoRef.current)) {
+          if (
+            live &&
+            (e.target === e.currentTarget ||
+              e.target === canvasRef.current ||
+              e.target === videoRef.current)
+          ) {
             toggleFullscreen();
           }
         }}
       >
         {!live && <Sky />}
+        {/* Without the GPU the <video> itself is shown, scaled by the browser. */}
         <video
           ref={videoRef}
-          className="lv-video"
+          className={gpuError ? "lv-video" : "lv-video-source"}
           data-fit={settings.fit}
           hidden={!live}
           muted
           playsInline
           disablePictureInPicture
+          aria-hidden={!gpuError}
           aria-label="Capture card picture"
         />
-        {live && settings.showStats && <StatsOverlay video={videoRef} capture={state} />}
+        <canvas
+          ref={canvasRef}
+          className="lv-canvas"
+          hidden={!live || !!gpuError}
+          role="img"
+          aria-label="Capture card picture"
+        />
+        {live && settings.showStats && (
+          <StatsOverlay capture={state} stats={renderer.stats} settings={settings} />
+        )}
         {!live && (
           <StatusScreen
             capture={state}
@@ -287,10 +359,21 @@ export default function App() {
           fullscreen={win.fullscreen}
           streamMode={streamMode}
           info={state.videoInfo ? formatVideo(state.videoInfo) : ""}
+          enhanceOn={settings.enhance.enabled && !gpuError}
+          fgOn={settings.fg.enabled && !gpuError}
+          recording={recording.recording}
+          recordBusy={recording.busy}
+          replaySeconds={recording.replaySeconds}
           onVolume={setVolume}
           onMute={() => update({ muted: !settings.muted })}
           onFit={() => update({ fit: nextFit(settings.fit) })}
           onScreenshot={() => void screenshot()}
+          onEnhance={() =>
+            update({ enhance: { ...settings.enhance, enabled: !settings.enhance.enabled } })
+          }
+          onFg={() => update({ fg: { ...settings.fg, enabled: !settings.fg.enabled } })}
+          onRecord={recording.toggle}
+          onReplay={() => void recording.saveReplay()}
           onStreamMode={() => setStreamMode((m) => !m)}
           onFullscreen={toggleFullscreen}
           onSettings={() => setSettingsOpen((o) => !o)}
@@ -303,6 +386,8 @@ export default function App() {
             update={update}
             capture={state}
             outputFailed={capture.outputFailed}
+            lut={renderer.lut}
+            gpuError={gpuError}
             updates={updates}
             version={version}
             onRestart={capture.restart}
